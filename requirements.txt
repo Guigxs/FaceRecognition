@@ -1,3 +1,7 @@
 numpy
 pillow
 matplotlib
+dlib
+opencv-python==4.4.0.46
+imutils
+tensorflow
