@@ -13,7 +13,7 @@ from tensorflow.keras.models import load_model
 print(cv2.__version__)
 emo = ['Angry', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 trainedPath = "../../shape_predictor_68_face_landmarks.dat"
-model = load_model("../training/facial_1/", compile = True)
+model = load_model("../training/facial_2/", compile = True)
 
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(trainedPath)
@@ -46,7 +46,7 @@ while rval:
         # convert dlib's rectangle to a OpenCV-style bounding box
         # [i.e., (x, y, w, h)], then draw the face bounding box
         (x, y, w, h) = face_utils.rect_to_bb(rect)
-        if j == 5:
+        if j >= 5:
             j = 0
 
             tl = int(y)
@@ -81,8 +81,8 @@ while rval:
         
         # loop over the (x, y)-coordinates for the facial landmarks
         # and draw them on the image
-        # for (x, y) in shape:
-        #     cv2.circle(gray, (x, y), 1, (0, 0, 255), -1)
+        for (x, y) in shape:
+            cv2.circle(gray, (x, y), 1, (0, 0, 255), -1)
 
     cv2.imshow("preview", gray)
 
