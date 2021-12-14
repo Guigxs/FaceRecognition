@@ -8,8 +8,13 @@
         <title>Document</title>
     </head">
     <body>  
-        <video id="videoInput"></video>
-        <canvas id="canvasOutput"></canvas>
+        <div style="position:relative;">
+            <video id="videoInput" autoplay muted></video>
+            <canvas style="position:absolute;top:0;left:0;" id="canvasOutput"></canvas>
+        </div>
+        
+        <canvas id="canvasTest"></canvas>
+
         <button id="start">Start</button>
         <button id="test">test</button>
     </body>

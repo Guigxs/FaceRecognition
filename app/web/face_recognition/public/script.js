@@ -1,5 +1,4 @@
 function start(){
-    console.log("fdp")
     var video = document.getElementById("videoInput");
     video.width = 640;
     video.height = 480;
