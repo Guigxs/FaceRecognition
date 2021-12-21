@@ -26,6 +26,10 @@
       {
         "staticPath": "models",
         "staticOutDir": "models/"
+      },
+      {
+        "staticPath": "emotions",
+        "staticOutDir": "emotions/"
       }
     ]
   }

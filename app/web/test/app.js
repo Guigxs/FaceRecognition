@@ -1,10 +1,12 @@
-console.log("in")
-
 import * as tf3 from '@tensorflow/tfjs';
 import cv from "./opencv"
 import * as faceapi from 'face-api.js';
 
-const model = tf3.loadLayersModel("/facial_3_js/model.json").then(console.log("loaded")).catch((err)=>console.log(err));
+const emo = ['Angry', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
+const emoji = ["😡", "😨", "😀", "🙁", "😲", "😐"]
+
+let model;
+tf3.loadLayersModel("/facial_3_js/model.json").then(val => model = val).catch((err)=>console.log(err));
 
 Promise.all([
     faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
@@ -16,87 +18,87 @@ Promise.all([
 console.log("All imports loaded")
 
 document.querySelector('#start').addEventListener('click', start)
-document.querySelector('#test').addEventListener('click', test)
+document.querySelector('#stop').addEventListener('click', stop)
 let video = document.getElementById("videoInput");
+const canvas = document.getElementById("canvasOutput");
+const canvasTest = document.getElementById("canvasTest");
+const expression = document.getElementById("expression");
+let detectionInterval;
 
-function test() {
-    console.log("in test")
-    video.width = 640;
-    video.height = 480;
-
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(async function (stream) {
-        video.srcObject = stream;
-        video.play();
-    })
+function stop() {
+    console.log("Stopping video")
+    video.pause()
+    clearInterval(detectionInterval)
 }
 
-// video.addEventListener("play", () => {
-//     setInterval(async () => {
-//         //source https://www.youtube.com/watch?v=CVClHLwv-4I
-//         const detections = await faceapi.detectAllFaces(video).withFaceLandmarks()
-//         console.log(detections)
-//     }, 100)
-// })
-
 video.addEventListener('play', () => {
-    const canvas = document.getElementById("canvasOutput");
     const displaySize = { width: video.width, height: video.height }
     faceapi.matchDimensions(canvas, displaySize)
-    setInterval(async () => {
-      const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks()
-      let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
-      let dst = new cv.Mat(video.height, video.width, cv.CV_8UC1);
-      let cap = new cv.VideoCapture(video);
-      cap.read(src);
-      cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);        
-      cv.imshow("canvasTest", dst);
 
+    detectionInterval = setInterval(async () => {
+      const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks()
       const resizedDetections = faceapi.resizeResults(detections, displaySize)
       canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
-      faceapi.draw.drawDetections(canvas, resizedDetections)
-      faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
+      // faceapi.draw.drawDetections(canvas, resizedDetections)
+      // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
+
+      let faces = await extractAllFaces(video, resizedDetections)
+
+      // let dst = new cv.Mat(video.height, video.width, cv.CV_8UC1);
+      faces.forEach(({zone, position}) => {
+        // img = cv.imread(value)
+        img = tf3.browser.fromPixels(zone).resizeBilinear([48,48]).mean(2)
+        .toFloat()
+        .expandDims(0)
+        .expandDims(-1)
+        let prediction = model.predict(img, {batch_size:32})
+        arr = prediction.arraySync()[0]
+        expression.innerText = emoji[arr.indexOf(Math.max(...arr))]
+        canvas.getContext('2d').font ="100px Arial";
+        canvas.getContext('2d').fillText(emoji[arr.indexOf(Math.max(...arr))], (position.x+position.width/2)-50, (position.y+position.height/2));
+        console.log(position)
+      })
+
+      // let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+      // let cap = new cv.VideoCapture(video);
+      // cap.read(src);
+      // cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);  
+      // cv.rectangle(dst, new cv.Point(resizedDetections[0].detection.box.x, resizedDetections[0].detection.box.y), new cv.Point(resizedDetections[0].detection.box.x + resizedDetections[0].detection.box.width, resizedDetections[0].detection.box.y + resizedDetections[0].detection.box.height), new cv.Scalar(255, 0, 0), 2, cv.LINE_AA, 0)      
+      // cv.imshow("canvasTest", img);
+
     }, 1)
   })
 
 function start() {
     video.width = 640;
     video.height = 480;
-    console.log(navigator.mediaDevices)
     navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function (stream) {
         video.srcObject = stream;
         video.play();
 
-        // let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
-        // let dst = new cv.Mat(video.height, video.width, cv.CV_8UC1);
-
-        // let cap = new cv.VideoCapture(video);
-        // const FPS = 30;
-        // function processVideo() {
-        //     try {
-        //         // if (!streaming) {
-        //         //   // clean and stop.
-        //         //   src.delete();
-        //         //   dst.delete();
-        //         //   return;
-        //         // }
-        //         let begin = Date.now();
-        //         // start processing.
-        //         cap.read(src);
-        //         cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
-                
-                
-        //         cv.imshow("canvasOutput", dst);
-        //         // schedule the next one.
-        //         let delay = 1000 / FPS - (Date.now() - begin);
-        //         setTimeout(processVideo, delay);
-        //     } catch (err) {
-        //         console.error(err);
-        //     }
-        // }
-
-        // schedule the first one.
-        setTimeout(processVideo, 0);
     }).catch(function (err) {
         console.log("An error occurred! " + err);
     });
+}
+
+async function extractAllFaces(inputImage, detections){
+  const regionsToExtract = [];
+  
+  detections.forEach(value => {
+    regionsToExtract.push(new faceapi.Rect(value.detection.box.x, value.detection.box.y, value.detection.box.width, value.detection.box.height));
+  })
+
+  let faceImages = await faceapi.extractFaces(inputImage, regionsToExtract)
+  faceImages = faceImages.map(x => {
+    let i = faceImages.indexOf(x);
+    return({zone: x, position:detections[i].detection.box});
+  });
+
+  if (faceImages.length == 0){
+    console.log("no faces");
+    return null;
+  }
+  else {
+    return faceImages;
+  }
 }
