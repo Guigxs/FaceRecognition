@@ -5,13 +5,13 @@ const emo = ['Angry', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 const emoji = ["😡", "😨", "😀", "🙁", "😲", "😐"]
 
 let model;
-tf3.loadLayersModel("/facial_3_js/model.json").then(val => model = val).catch((err)=>console.log(err));
+tf3.loadLayersModel("./facial_3_js/model.json").then(val => model = val).catch((err)=>console.log(err));
 
 Promise.all([
-    faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-    faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-    faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-    faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+    faceapi.nets.tinyFaceDetector.loadFromUri('./models'),
+    faceapi.nets.faceLandmark68Net.loadFromUri('./models'),
+    faceapi.nets.faceRecognitionNet.loadFromUri('./models'),
+    faceapi.nets.ssdMobilenetv1.loadFromUri('./models'),
   ]).then(() => {console.log("models loaded")}).catch((err)=>console.log(err))
 
 console.log("All imports loaded")
@@ -39,15 +39,12 @@ video.addEventListener('play', () => {
       let faces = await extractAllFaces(video, resizedDetections)
       
       faces.forEach(({zone, position, landmarks}) => {
-        img = tf3.browser.fromPixels(zone).resizeBilinear([48,48]).mean(2)
-        .toFloat()
-        .expandDims(0)
-        .expandDims(-1)
-        let prediction = model.predict(img, {batch_size:32})
-        arr = prediction.arraySync()[0]
-        ctx = canvas.getContext('2d');
+        let resizedImg = tf3.browser.fromPixels(zone).resizeBilinear([48,48]).mean(2).toFloat().expandDims(0).expandDims(-1)
+        let prediction = model.predict(resizedImg, {batch_size:32})
+        let arrayPrediction = prediction.arraySync()[0]
+        let ctx = canvas.getContext('2d');
 
-        drawEmoji(ctx, position, landmarks)
+        drawEmoji(ctx, arrayPrediction, position, landmarks)
       })
 
     }, 1000)
@@ -87,24 +84,24 @@ async function extractAllFaces(inputImage, detections){
   }
 }
 
-function drawEmoji(ctx, position, landmarks){
+function drawEmoji(ctx, arrayPrediction, position, landmarks){
   // Get 2 noze points
-  top_noze = landmarks[27]
-  bottom_noze = landmarks[30]
+  let top_noze = landmarks[27]
+  let bottom_noze = landmarks[30]
   // TOA from the top angle 
-  a = bottom_noze.y - top_noze.y
-  o = top_noze.x - bottom_noze.x
-  rot = Math.atan(o/a) 
+  let a = bottom_noze.y - top_noze.y
+  let o = top_noze.x - bottom_noze.x
+  let rot = Math.atan(o/a) 
 
   // x, y = face detection position 
-  x = (position.x + position.width/2)
-  y = (position.y + position.height/2)
+  let x = (position.x + position.width/2)
+  let y = (position.y + position.height/2)
   // Drawing the emoji
   ctx.translate(x, y);
   ctx.rotate(rot);
   ctx.translate(-x, -y);
   ctx.font =`${position.width}px Arial`;
-  ctx.fillText(emoji[arr.indexOf(Math.max(...arr))], x-position.width/2, y+position.height/4);
+  ctx.fillText(emoji[arrayPrediction.indexOf(Math.max(...arrayPrediction))], x-position.width/2, y+position.height/4);
   ctx.translate(x, y);
   ctx.rotate(-rot);
   ctx.translate(-x, -y);

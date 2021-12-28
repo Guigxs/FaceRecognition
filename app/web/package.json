@@ -5,7 +5,7 @@
   ],
   "scripts": {
     "start": "parcel --https",
-    "build": "parcel build"
+    "build": "parcel build --public-url ./ --no-optimize"
   },
   "devDependencies": {
     "parcel": "^2.0.1",
