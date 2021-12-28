@@ -1,5 +1,4 @@
 import * as tf3 from '@tensorflow/tfjs';
-import cv from "./opencv"
 import * as faceapi from 'face-api.js';
 
 const emo = ['Angry', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
@@ -21,7 +20,6 @@ document.querySelector('#start').addEventListener('click', start)
 document.querySelector('#stop').addEventListener('click', stop)
 let video = document.getElementById("videoInput");
 const canvas = document.getElementById("canvasOutput");
-const canvasTest = document.getElementById("canvasTest");
 let detectionInterval;
 
 function stop() {
@@ -38,8 +36,6 @@ video.addEventListener('play', () => {
       const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks()
       const resizedDetections = faceapi.resizeResults(detections, displaySize)
       canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
-      // faceapi.draw.drawDetections(canvas, resizedDetections)
-      // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
       let faces = await extractAllFaces(video, resizedDetections)
       
       faces.forEach(({zone, position, landmarks}) => {
@@ -53,14 +49,6 @@ video.addEventListener('play', () => {
 
         drawEmoji(ctx, position, landmarks)
       })
-      
-      // let dst = new cv.Mat(video.height, video.width, cv.CV_8UC1);
-      // let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
-      // let cap = new cv.VideoCapture(video);
-      // cap.read(src);
-      // cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);  
-      // cv.rectangle(dst, new cv.Point(resizedDetections[0].detection.box.x, resizedDetections[0].detection.box.y), new cv.Point(resizedDetections[0].detection.box.x + resizedDetections[0].detection.box.width, resizedDetections[0].detection.box.y + resizedDetections[0].detection.box.height), new cv.Scalar(255, 0, 0), 2, cv.LINE_AA, 0)      
-      // cv.imshow("canvasTest", img);
 
     }, 1000)
   })

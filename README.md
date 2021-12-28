@@ -12,7 +12,6 @@ For emotional detection we trained a model based on an existing classification [
 
 For the detection we used a node module called [Parcel](https://parceljs.org/docs/) for packaging the app and loading our different libraries: 
 - [Tensorflow.js](https://www.tensorflow.org/js) for the prediction
-- [OpenCV.js](https://docs.opencv.org/3.4/d5/d10/tutorial_js_root.html) for image manipulation
 - [face-api.js](https://github.com/justadudewhohacks/face-api.js/) for face detection
 
 
